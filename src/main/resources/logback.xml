@@ -1,0 +1,34 @@
+<configuration scan="true">
+
+	<property name="baseLogDir" value="/root/logs/web"/>
+
+	<!-- 콘솔 출력 (stdout) -->
+	<appender name="console" class="ch.qos.logback.core.ConsoleAppender">
+		<encoder>
+			<pattern>[%d{yyyy-MM-dd HH:mm:ss}:%-3relative][%thread] %-5level %logger{35} - %msg%n</pattern>
+		</encoder>
+	</appender>
+
+	<!-- 일별 파일로 저장 -->
+	<appender name="controllerLogger" class="ch.qos.logback.core.rolling.RollingFileAppender">
+		<file>${baseLogDir}/youtubeAudioExtractor.log</file>
+		<encoder>
+			<pattern>[%d{yyyy-MM-dd HH:mm:ss}:%-3relative][%thread] %-5level %logger{35} - %msg%n</pattern>
+		</encoder>
+		<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+			<fileNamePattern>${baseLogDir}/youtubeAudioExtractor.log.%d{yyyyMMdd}</fileNamePattern>
+		</rollingPolicy>
+	</appender>
+
+
+	<!-- 기본으로 적용되는 설정 -->
+	<root level="debug">
+		<appender-ref ref="console"/>
+	</root>
+
+	<logger name="logger.controller" level="info" additivity="false">
+		<appender-ref ref="controllerLogger"/>
+		<appender-ref ref="console"/>
+	</logger>
+
+</configuration>

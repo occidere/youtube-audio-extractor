@@ -2,7 +2,9 @@ package org.occidere.youtubeaudioextractor.controller;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
-import org.springframework.ui.Model;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.util.FileCopyUtils;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -14,32 +16,37 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.net.URLEncoder;
+import java.nio.file.NoSuchFileException;
 
 @Slf4j
 @org.springframework.stereotype.Controller
 public class Controller {
+	Logger controllerLogger = LoggerFactory.getLogger("logger.controller");
 
-	private final String AUDIO_PATH = "/tmp/mp3";
+	@Value("${audio.path}")
+	private String audioPath;
+	@Value("${index.page}")
+	private String indexPage;
 
 	@RequestMapping("/")
 	public String index() {
-		return "index.html";
+		return indexPage;
 	}
 
 	@PostMapping("/download")
-	public void download(HttpServletResponse response, @RequestParam("url") String url) {
-		log.info("URL: " + url);
+	public void download(HttpServletResponse response, @RequestParam("url") String url, @RequestParam("audio_format") String ext) {
+		controllerLogger.info("URL: {}, ext: {}", url, ext);
 
 		try {
-			File file = getAudioFile(url, "aac");
+			File file = getAudioFile(url, ext);
 
 			if(file.exists() == false) {
-				log.error("No File : " + file.getAbsolutePath());
-				return;
+				controllerLogger.error("No File : " + file.getAbsolutePath());
+				throw new NoSuchFileException(file.getAbsolutePath());
 			}
 
 			String encodedFileName = URLEncoder.encode(file.getName(), "UTF-8");
-			log.info("Encoded FileName : " + encodedFileName);
+			controllerLogger.info("Encoded FileName : " + encodedFileName);
 
 			response.setCharacterEncoding("UTF-8");
 			response.setContentType("application/octet-stream");
@@ -49,26 +56,22 @@ public class Controller {
 			InputStream inputStream = new BufferedInputStream(new FileInputStream(file));
 			FileCopyUtils.copy(inputStream, response.getOutputStream());
 
+			controllerLogger.info("Done");
 		} catch (Exception e) {
-			e.printStackTrace();
+			controllerLogger.error("", e);
+			throw new RuntimeException(e);
 		}
-
-		log.info("Done");
 	}
 
 	private String getFileName(String url, String ext) throws Exception {
-		String getTitleCommand = "youtube-dl -e " + url;
-		Process proc = Runtime.getRuntime().exec(getTitleCommand);
-
+		Process proc = Runtime.getRuntime().exec("youtube-dl -e " + url);
 		String title = String.join("", IOUtils.readLines(proc.getInputStream(), "UTF-8"))
 				.replaceAll(" ", "_")
 				.replaceAll("/", "");
-		log.info("Title : " + title);
-
 		proc.destroy();
 
 		String name = title + "." + ext;
-		log.info("Name : " + name);
+		controllerLogger.info("Name : " + name);
 
 		return name;
 	}
@@ -77,22 +80,26 @@ public class Controller {
 		String name = getFileName(url, ext);
 
 		if(hitCache(name)) {
-			log.info("Cache Hit!");
+			controllerLogger.info("Cache Hit!");
 		} else {
-			log.info("No Cache");
-			String command = String.format("youtube-dl -x --audio-quality 0 --audio-format %s -o %s/%s %s", ext, AUDIO_PATH, name, url);
-			log.info("Command : " + command);
+			controllerLogger.info("No Cache");
+			String command = buildCommand(url, audioPath, name, ext);
+			controllerLogger.info("Command : " + command);
 
 			Process proc = Runtime.getRuntime().exec(command);
 			proc.waitFor();
 			proc.destroy();
 		}
 
-		return new File(AUDIO_PATH + "/" + name);
+		return new File(audioPath + "/" + name);
 	}
 
 	private boolean hitCache(String fileName) {
-		new File(AUDIO_PATH).mkdirs();
-		return new File(AUDIO_PATH + "/" + fileName).exists();
+		new File(audioPath).mkdirs();
+		return new File(audioPath + "/" + fileName).exists();
+	}
+
+	public static String buildCommand(String url, String path, String name, String ext) {
+		return String.format("youtube-dl -x --audio-quality 0 --audio-format %s -o %s/%s %s", ext, path, name, url);
 	}
 }

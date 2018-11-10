@@ -4,10 +4,36 @@
     <meta charset="UTF-8">
     <title>Title</title>
 </head>
+
+<title>유투브 오디오 추출</title>
+
 <body>
-    <form method="POST" action="/download" >
-        <input type="text" name="url" />
-        <input type="submit" value="다운로드" />
+<div id="download_form">
+    <form action="/download" method="POST">
+        <table>
+            <tbody>
+            <tr>
+                <td><input autocomplete="off" name="url" size="50" type="text" style="font-size: 15px;"/></td>
+                <td><input type="submit" value="다운로드" style="font-size: 15px;"/></td>
+            </tr>
+            <tr>
+                <td style="font-size: 15px;">
+                    <input checked="checked" name="audio_format" type="radio" value="mp3"/>mp3
+                    <input name="audio_format" type="radio" value="aac"/>aac
+                    <input name="audio_format" type="radio" value="m4a"/>m4a
+                </td>
+            </tr>
+            </tbody>
+        </table>
     </form>
+</div>
 </body>
+
+<style type="text/css">
+    #download_form {
+        width: 500px;
+        margin: 0 auto;
+        text-align: center;
+    }
+</style>
 </html>
