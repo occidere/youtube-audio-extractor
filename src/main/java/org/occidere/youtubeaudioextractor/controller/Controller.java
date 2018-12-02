@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.BufferedInputStream;
 import java.io.File;
@@ -34,7 +35,8 @@ public class Controller {
 	}
 
 	@PostMapping("/download")
-	public void download(HttpServletResponse response, @RequestParam("url") String url, @RequestParam("audio_format") String ext) {
+	public void download(HttpServletRequest request, HttpServletResponse response, @RequestParam("url") String url, @RequestParam("audio_format") String ext) {
+		controllerLogger.info("Request from: {}", request.getRemoteAddr());
 		controllerLogger.info("URL: {}, ext: {}", url, ext);
 
 		try {
